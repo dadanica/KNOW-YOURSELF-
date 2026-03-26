@@ -1,14 +1,30 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useTestContext } from "@/contexts/TestContext";
 import { ResultCard } from "@/components/result/ResultCard";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { getClientId } from "@/lib/clientId";
+import type { ResultPack } from "@/lib/types";
 
 function ResultContent() {
   // Only renders result from context (set by test page via useTestEngine)
-  const { storedResult: result } = useTestContext();
+  const { storedResult: result, setStoredResult } = useTestContext();
+
+  // If user refreshed and context is empty, try to load last saved record from DB
+  useEffect(() => {
+    if (result) return;
+    const clientId = getClientId();
+    void fetch(`/api/results?clientId=${encodeURIComponent(clientId)}&latest=1`)
+      .then((r) =>
+        r.json() as Promise<{ ok: true; data: { resultJson: ResultPack } | null }>
+      )
+      .then((j) => {
+        if (j.ok && j.data) setStoredResult(j.data.resultJson);
+      })
+      .catch(() => {});
+  }, [result, setStoredResult]);
 
   // Show loading or empty state if no result
   if (!result) {
@@ -21,6 +37,12 @@ function ResultContent() {
             className="text-primary text-sm hover:underline inline-block"
           >
             开始测试
+          </Link>
+          <Link
+            href="/record"
+            className="text-primary text-sm hover:underline inline-block"
+          >
+            查看记录
           </Link>
         </div>
       </main>
@@ -47,6 +69,15 @@ function ResultContent() {
 
       {/* Result - only renders result from useTestEngine */}
       <ResultCard result={result} />
+
+      <div className="w-full max-w-md mx-auto mt-4 text-center">
+        <Link
+          href="/record"
+          className="text-primary text-sm hover:underline inline-block"
+        >
+          查看记录
+        </Link>
+      </div>
 
       {/* Footer */}
       <footer className="w-full max-w-md mx-auto mt-8 text-center">

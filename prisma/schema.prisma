@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model TestResult {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // per-user anonymous id (history records)
+  clientId    String?
+  @@index([clientId, createdAt])
+
+  // logged-in user (optional)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt])
+
+  // idempotency key to prevent duplicate saves on retries
+  attemptId   String?  @unique
+
+  // app-level fields
+  mode        Int
+  typeKey     String
+  typeName    String
+  createdAtISO String
+
+  // computed result payload (json for flexibility)
+  resultJson  Json
+
+  // raw answer payload for later analysis
+  answersJson Json
+  questionIds Json
+
+  // optional request metadata
+  userAgent   String?
+  ip          String?
+}
+
+model User {
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  email        String    @unique
+  passwordHash String
+
+  sessions     Session[]
+  results      TestResult[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  tokenHash String   @unique
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}

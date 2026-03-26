@@ -1,13 +1,14 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useTestEngine } from "@/hooks/useTestEngine";
 import { useTestContext } from "@/contexts/TestContext";
 import { QuestionCard } from "@/components/test/QuestionCard";
 import { TestProgress } from "@/components/test/TestProgress";
 import type { TestMode } from "@/lib/types";
+import { getClientId } from "@/lib/clientId";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -19,6 +20,7 @@ function TestContent() {
     modeParam === "24" ? 24 : modeParam === "48" ? 48 : 36;
 
   const { setStoredResult } = useTestContext();
+  const didPersistRef = useRef(false);
 
   const {
     current: currentQuestion,
@@ -27,6 +29,8 @@ function TestContent() {
     index: currentIndex,
     isDone,
     result,
+    answers,
+    questionList,
     answer,
   } = useTestEngine(mode);
 
@@ -34,9 +38,25 @@ function TestContent() {
   useEffect(() => {
     if (isDone && result) {
       setStoredResult(result);
+      if (didPersistRef.current) return;
+      didPersistRef.current = true;
+      // Fire-and-forget persistence (do not block navigation)
+      const payload = {
+        clientId: getClientId(),
+        result,
+        answers,
+        questionIds: questionList.map((q) => q.id),
+      };
+      void fetch("/api/results", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        // best-effort: allow request to continue during page transition
+        keepalive: true,
+      }).catch(() => {});
       router.push(`/result?mode=${mode}`);
     }
-  }, [isDone, result, router, mode, setStoredResult]);
+  }, [isDone, result, router, mode, setStoredResult, answers, questionList]);
 
   const modeLabels: Record<TestMode, string> = {
     24: "快速模式",

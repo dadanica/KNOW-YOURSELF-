@@ -86,6 +86,14 @@ export default function LandingPage() {
         >
           <Button
             asChild
+            variant="outline"
+            size="lg"
+            className="w-full rounded-2xl h-12 text-sm bg-transparent"
+          >
+            <Link href="/record">查看历史记录</Link>
+          </Button>
+          <Button
+            asChild
             size="lg"
             className="w-full rounded-2xl h-14 text-base"
           >
