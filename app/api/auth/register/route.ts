@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createSession, hashPassword } from "@/lib/auth";
+import { createSession, hashPassword, USER_SESSION_COOKIE } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -29,8 +29,16 @@ export async function POST(req: Request) {
       select: { id: true, email: true },
     });
 
-    await createSession(user.id);
-    return NextResponse.json({ ok: true, user });
+    const { token, expiresAt } = await createSession(user.id);
+    const res = NextResponse.json({ ok: true, user });
+    res.cookies.set(USER_SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
+      secure: process.env.NODE_ENV === "production",
+    });
+    return res;
   } catch (err) {
     // helpful during local development
     // eslint-disable-next-line no-console

@@ -31,13 +31,7 @@ export async function createSession(userId: string) {
     data: { userId, tokenHash, expiresAt },
   });
 
-  const jar = await cookies();
-  jar.set(USER_SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
+  return { token, expiresAt };
 }
 
 export async function destroySession() {
