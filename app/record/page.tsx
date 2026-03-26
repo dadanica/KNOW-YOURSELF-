@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getClientId } from "@/lib/clientId";
+import { clearClientId, getClientId } from "@/lib/clientId";
 import type { ResultPack } from "@/lib/types";
 
 type RecordRow = {
@@ -22,6 +22,7 @@ type ApiOk = { ok: true; data: RecordRow[] };
 function RecordContent() {
   const [rows, setRows] = useState<RecordRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     const clientId = getClientId();
@@ -34,6 +35,27 @@ function RecordContent() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  async function onClearHistory() {
+    if (!confirm("确定要清空所有历史记录吗？该操作不可恢复。")) return;
+    const clientId = getClientId();
+    setClearing(true);
+    try {
+      const res = await fetch(
+        `/api/results?clientId=${encodeURIComponent(clientId)}`,
+        { method: "DELETE" }
+      );
+      const j = (await res.json()) as { ok: boolean; deleted?: number };
+      if (!res.ok || !j.ok) {
+        alert("清空失败，请稍后重试");
+        return;
+      }
+      clearClientId();
+      setRows([]);
+    } finally {
+      setClearing(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -76,6 +98,14 @@ function RecordContent() {
         <p className="text-muted-foreground text-xs mt-1">
           共 {rows.length} 条，按时间倒序
         </p>
+        <button
+          type="button"
+          onClick={onClearHistory}
+          disabled={clearing}
+          className="mt-3 text-xs text-muted-foreground hover:text-foreground disabled:opacity-60"
+        >
+          {clearing ? "清空中..." : "清空记录"}
+        </button>
       </div>
 
       {/* History list */}

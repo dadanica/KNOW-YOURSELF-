@@ -143,3 +143,17 @@ export async function POST(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  const url = new URL(req.url);
+  const clientId = url.searchParams.get("clientId");
+  const user = await getAuthedUser();
+
+  const where = user ? { userId: user.id } : clientId ? { clientId } : null;
+  if (!where) {
+    return NextResponse.json({ ok: false, error: "MISSING_CLIENT_ID" }, { status: 400 });
+  }
+
+  const deleted = await prisma.testResult.deleteMany({ where });
+  return NextResponse.json({ ok: true, deleted: deleted.count });
+}
+

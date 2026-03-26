@@ -18,3 +18,8 @@ export function getClientId(): string {
   return created;
 }
 
+export function clearClientId() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(STORAGE_KEY);
+}
+
