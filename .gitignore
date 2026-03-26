@@ -7,6 +7,9 @@
 /.next/
 /out/
 
+# local sqlite db (do not commit)
+/prisma/dev.db
+
 # production
 /build
 
