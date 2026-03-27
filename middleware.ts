@@ -18,12 +18,8 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // 保护需要登录的用户路由
-  if (
-    pathname.startsWith("/account") ||
-    pathname.startsWith("/test") ||
-    pathname.startsWith("/record")
-  ) {
+  // 仅保护账号中心；测试与记录支持匿名 clientId 访问
+  if (pathname.startsWith("/account")) {
     const token = req.cookies.get(USER_COOKIE)?.value;
     if (!token) {
       const url = req.nextUrl.clone();
@@ -37,6 +33,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*", "/test/:path*", "/record/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*"],
 };
 
